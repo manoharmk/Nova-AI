@@ -1,112 +1,71 @@
-# Nova AI
+# Nova AI ⚡
 
-Nova AI is a production-quality desktop AI assistant built step-by-step using modern Java standards and Clean Architecture principles.
+Nova AI is a production-quality, step-by-step desktop assistant built using modern Spring Boot patterns, Clean Architecture principles, and a responsive React frontend.
 
-## 🚀 Technology Stack
-
-* **Language:** Java 21 (LTS)
-* **Framework:** Spring Boot 3.3.x
-* **Build System:** Maven
-* **AI Integration:** Spring AI with OpenAI Support
-* **Boilerplate Reduction:** Lombok
+It leverages intent routing to decide whether to execute desktop tools locally or stream requests to a Large Language Model (LLM).
 
 ---
 
-## 🏗️ Architectural Design
+## 🎨 Visual Mockup
 
-The codebase strictly adheres to **SOLID** principles, separation of concerns, and constructor-based dependency injection.
+![Nova AI Chat Interface](./nova_chat_interface.png)
 
-### Package Structure
+---
 
-```text
-com.manohar.nova
-├── controller     # REST Controllers & API endpoint mappings
-├── service        # Core Business services & vendor abstractions
-│   └── impl       # Concrete implementations of services
-├── dto            # Data Transfer Objects & Request validations
-├── intent         # Request intent analysis & routing layer
-│   └── impl       # Intent rule implementation classes
-├── tools          # Modular tool interface & execution dispatcher
-│   └── impl       # Concrete system tools (e.g. TimeTool)
-└── config         # Configuration classes
+## 🏗️ Architecture Design
+
+The system is split into decoupled layers adhering to **SOLID** and Clean Architecture rules.
+
+### Flow Diagram
+
+```mermaid
+graph TD
+    User([Browser Client]) -->|1. Message| ReactApp[React Chat UI]
+    ReactApp -->|2. POST /api/chat/stream| Controller[ChatStreamController]
+    Controller -->|3. Record| Memory[MemoryService / InMemoryStore]
+    Controller -->|4. Inspect Message| Intent[IntentService / Router]
+    
+    Intent -->|IntentType = TOOL| Dispatcher[ToolDispatcher]
+    Intent -->|IntentType = CHAT| OpenAI[StreamingAIService / Spring AI]
+    
+    Dispatcher -->|Executes Locally| Tools[System/Calc/UUID/Automation Tools]
+    OpenAI -->|Stream Tokens| Prompt[PromptBuilder]
+    
+    Prompt -->|Incorporate latest 10 messages| OpenAI
+    OpenAI -->|5. Token Stream| Controller
+    Controller -->|6. Event Stream SSE| ReactApp
 ```
 
 ---
 
-## ⚡ Key Modules
+## ⚡ Key Features
 
-### 1. Intent Router
-Every incoming request goes through the `IntentService` before calling external APIs. 
-* If local keywords (such as `time`, `clock`, `date`, `today`) are detected, the request is flagged as a `TOOL` intent and resolved locally.
-* Otherwise, it is flagged as a `CHAT` intent and dispatched to the LLM.
-* **Why it exists:** Bypasses expensive and slow network calls to the LLM for simple queries.
-
-### 2. Tool Framework
-* **`Tool` Interface:** A standard execution contract (`getName`, `getDescription`, `execute`) implemented by all system actions.
-* **`ToolRegistry`:** Startup component that dynamically discovers all Spring beans implementing `Tool` via constructor list-injection and catalogs them.
-* **`ToolDispatcher`:** Orchestrates and executes tools by name, returning standardized error fallbacks if a tool is not found.
-
-### 3. AI Service Boundary
-* Abstracts direct LLM interaction behind `AIService` and uses Spring AI's `ChatModel` underneath.
-* Includes graceful fallback error handling, shielding API clients from raw connection stack traces.
+* **Server-Sent Events (SSE) Streaming:** Token-by-token stream rendering with typing indicators and cancellation support.
+* **Smart Intent Router:** Analyzes user queries locally to bypass AI processing for simple tasks (time, system metrics, desktop launching, arithmetic).
+* **Decoupled Tool Framework:** Dynamically registers local Java components as execution tools using Spring bean discovery.
+* **Rolling Memory Windows:** Automatically trims in-memory conversation storage to keep only the latest 20 message pairs.
+* **Desktop Automation:** Launches Windows applications (Google Chrome, Microsoft Edge, Notepad, Calculator, VS Code) using native `ProcessBuilder` commands.
+* **Rich Markdown Renderers:** Visual rendering of markdown tables, lists, and syntax-highlighted code blocks in message bubbles.
 
 ---
 
-## 🛠️ API Documentation
+## 💻 Tech Stack
 
-### 1. Chat Endpoints
-
-#### `POST /api/chat`
-Resolves user queries by dispatching to the correct local tool or AI provider.
-
-* **Payload:**
-  ```json
-  {
-    "message": "What time is it?"
-  }
-  ```
-* **Response (Routed to local TimeTool):**
-  ```json
-  {
-    "reply": "2026-06-28 09:44:17"
-  }
-  ```
+* **Backend:** Java 21, Spring Boot 3.3.x, Spring AI (OpenAI API Model), Project Reactor
+* **Frontend:** React, Vite, Tailwind CSS v4, Axios, Marked (Markdown compiler)
+* **Build System:** Maven, npm
 
 ---
 
-### 2. Test/Tool Endpoints (Temporary)
-
-#### `GET /api/tools`
-Lists metadata for all registered system tools.
-* **Response:**
-  ```json
-  [
-    {
-      "name": "time",
-      "description": "Returns the current local date and time."
-    }
-  ]
-  ```
-
-#### `GET /api/tools/time`
-Directly executes the `time` tool.
-* **Response:**
-  ```json
-  {
-    "result": "2026-06-28 09:44:17"
-  }
-  ```
-
----
-
-## 📦 Getting Started
+## 🚀 Installation & Setup
 
 ### Prerequisites
 * JDK 21
+* Node.js & npm
 * Maven
 
-### Configuration
-Configure your OpenAI API key as an environment variable:
+### 1. Clone & Configure Backend
+Create an environment variable containing your OpenAI API Key (or override it in `src/main/resources/application.properties`):
 * **Linux/macOS:**
   ```bash
   export OPENAI_API_KEY="your_api_key_here"
@@ -116,8 +75,82 @@ Configure your OpenAI API key as an environment variable:
   $env:OPENAI_API_KEY="your_api_key_here"
   ```
 
-### Running the Application
-Start the Spring Boot server (port `8081`):
+Run the Spring Boot application on port `8081`:
 ```bash
 mvn spring-boot:run
 ```
+
+### 2. Configure & Run Frontend
+Navigate to the `frontend/` directory and install client libraries:
+```bash
+cd frontend
+npm install
+```
+
+Start the Vite development client on port `3000`:
+```bash
+npm run dev
+```
+
+Open [**http://localhost:3000**](http://localhost:3000) in your browser!
+
+---
+
+## 📖 API Documentation
+
+### 1. Streaming Chat Endpoint
+* **URL:** `POST /api/chat/stream`
+* **Content-Type:** `application/json`
+* **MIME Type (produces):** `text/event-stream`
+* **Payload:**
+  ```json
+  {
+    "message": "Explain Dependency Injection."
+  }
+  ```
+* **Response format:** Streaming SSE data tokens.
+
+---
+
+### 2. Synchronous Chat Endpoint
+* **URL:** `POST /api/chat`
+* **Payload:**
+  ```json
+  {
+    "message": "What is 2 + 2?"
+  }
+  ```
+* **Response:**
+  ```json
+  {
+    "reply": "4"
+  }
+  ```
+
+---
+
+### 3. Tool Management Endpoints
+* **GET `/api/tools`**: Lists names and descriptions of all registered tools.
+* **GET `/api/tools/{toolName}?input=...`**: Directly runs a specific tool locally.
+* **POST `/api/tools/open`**: Body `{"application": "chrome"}` opens Chrome on Windows.
+
+---
+
+### 4. Memory Management Endpoints
+* **GET `/api/memory`**: Lists the current rolling history containing `role` and `content`.
+* **POST `/api/memory/clear`**: Clears dialogue logs.
+
+---
+
+## 🗺️ Project Roadmap
+
+- [x] Initial Spring Boot Project Setup
+- [x] Dynamic Java Tool Dispatcher
+- [x] Keyword-based Intent Router
+- [x] Desktop Automation Integration
+- [x] Rolling In-Memory Memory Cache
+- [x] Token-by-Token SSE Stream Renderer
+- [x] Copy & Regeneration Controls
+- [ ] Database Persistence (Migration from in-memory cache to PostgreSQL/H2)
+- [ ] Retrieval-Augmented Generation (RAG) with local document indexes
+- [ ] OS-Level mouse/keyboard macros using `java.awt.Robot`
