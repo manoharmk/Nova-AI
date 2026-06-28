@@ -27,10 +27,24 @@ public class SimpleIntentService implements IntentService {
         }
 
         String lowerMessage = message.toLowerCase();
-        boolean matchesTime = TIME_KEYWORDS.stream().anyMatch(lowerMessage::contains);
 
-        if (matchesTime) {
+        if (TIME_KEYWORDS.stream().anyMatch(lowerMessage::contains)) {
             return new Intent(IntentType.TOOL, "time", message);
+        }
+        if (lowerMessage.contains("calculate") || lowerMessage.contains("calculator")) {
+            return new Intent(IntentType.TOOL, "calculator", message);
+        }
+        if (lowerMessage.contains("system")) {
+            return new Intent(IntentType.TOOL, "system", message);
+        }
+        if (lowerMessage.contains("uuid")) {
+            return new Intent(IntentType.TOOL, "uuid", message);
+        }
+        if (lowerMessage.contains("random")) {
+            return new Intent(IntentType.TOOL, "random", message);
+        }
+        if (lowerMessage.contains("echo")) {
+            return new Intent(IntentType.TOOL, "echo", message);
         }
 
         return new Intent(IntentType.CHAT, null, message);

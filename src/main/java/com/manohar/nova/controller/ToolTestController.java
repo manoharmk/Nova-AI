@@ -4,7 +4,9 @@ import com.manohar.nova.tools.ToolDispatcher;
 import com.manohar.nova.tools.ToolRegistry;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
@@ -45,13 +47,17 @@ public class ToolTestController {
     }
 
     /**
-     * Endpoint to run the time tool.
+     * Endpoint to run any registered tool with optional inputs.
      *
+     * @param tool  the name of the tool to execute
+     * @param input the optional execution argument
      * @return execution result mapping
      */
-    @GetMapping("/time")
-    public ResponseEntity<Map<String, String>> executeTimeTool() {
-        String result = toolDispatcher.execute("time", "");
+    @GetMapping("/{tool}")
+    public ResponseEntity<Map<String, String>> executeTool(
+            @PathVariable String tool,
+            @RequestParam(required = false, defaultValue = "") String input) {
+        String result = toolDispatcher.execute(tool, input);
         return ResponseEntity.ok(Map.of("result", result));
     }
 
