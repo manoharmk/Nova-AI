@@ -5,6 +5,8 @@ import com.manohar.nova.tools.ToolRegistry;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -60,6 +62,23 @@ public class ToolTestController {
         String result = toolDispatcher.execute(tool, input);
         return ResponseEntity.ok(Map.of("result", result));
     }
+
+    /**
+     * Endpoint to launch desktop applications.
+     *
+     * @param request the application request payload
+     * @return execution status mapping
+     */
+    @PostMapping("/open")
+    public ResponseEntity<Map<String, String>> openApp(@RequestBody OpenAppRequest request) {
+        String result = toolDispatcher.execute("openApplication", request.application());
+        return ResponseEntity.ok(Map.of("status", result));
+    }
+
+    /**
+     * Payload for opening applications.
+     */
+    public record OpenAppRequest(String application) {}
 
     /**
      * Data record summarizing tool description parameters.

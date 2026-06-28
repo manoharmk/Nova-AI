@@ -28,6 +28,18 @@ public class SimpleIntentService implements IntentService {
 
         String lowerMessage = message.toLowerCase();
 
+        if (lowerMessage.contains("open") || lowerMessage.contains("launch") || lowerMessage.contains("start")) {
+            String app = "";
+            if (lowerMessage.contains("chrome")) app = "chrome";
+            else if (lowerMessage.contains("edge")) app = "edge";
+            else if (lowerMessage.contains("notepad")) app = "notepad";
+            else if (lowerMessage.contains("calculator") || lowerMessage.contains("calc")) app = "calculator";
+            else if (lowerMessage.contains("vscode") || lowerMessage.contains("vs code") || lowerMessage.contains("code")) app = "vscode";
+            
+            if (!app.isEmpty()) {
+                return new Intent(IntentType.TOOL, "openApplication", app);
+            }
+        }
         if (TIME_KEYWORDS.stream().anyMatch(lowerMessage::contains)) {
             return new Intent(IntentType.TOOL, "time", message);
         }
